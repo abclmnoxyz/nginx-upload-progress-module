@@ -446,7 +446,10 @@ static ngx_str_t* ngx_http_uploadprogress_strdup(ngx_str_t *src,  ngx_log_t * lo
 
 static void ngx_http_uploadprogress_strdupfree(ngx_str_t *str)
 {
-    ngx_free(str);
+    if (str != NULL) {
+        ngx_free(str);
+    }
+
 }
 
 static void ngx_http_uploadprogress_event_handler(ngx_http_request_t *r)
@@ -768,8 +771,8 @@ ngx_http_uploadprogress_handler(ngx_http_request_t * r)
     ngx_http_uploadprogress_cleanup_t *upcln;
     ngx_pool_cleanup_t              *cln;
 
-    /* Is it a POST connection */
-    if (r->method != NGX_HTTP_POST) {
+    /* Only look for progress IDs on POST, PUT and PATCH */
+    if (!(r->method & (NGX_HTTP_POST | NGX_HTTP_PUT | NGX_HTTP_PATCH))) {
         return NGX_DECLINED;
     }
 
@@ -854,6 +857,11 @@ ngx_http_uploadprogress_handler(ngx_http_request_t * r)
         if (r->request_body) {
             up->rest = r->request_body->rest;
         }
+//        https://github.com/msva/nginx-upload-progress-module/commit/85f92ae21e055b14f4108bfcbf94ed3e7785880a
+        else {
+            up->rest = up->length;
+        }
+
     }
 
     up->next = ctx->list_head.next;
